@@ -1,0 +1,7 @@
+C:/Users/MinJae/Documents/GitHub/indentation-check/AStyle_3.1_windows/AStyle/as-mingw-exe/CMakeFiles/install/strip.dir
+C:/Users/MinJae/Documents/GitHub/indentation-check/AStyle_3.1_windows/AStyle/as-mingw-exe/CMakeFiles/astyle.dir
+C:/Users/MinJae/Documents/GitHub/indentation-check/AStyle_3.1_windows/AStyle/as-mingw-exe/CMakeFiles/install/local.dir
+C:/Users/MinJae/Documents/GitHub/indentation-check/AStyle_3.1_windows/AStyle/as-mingw-exe/CMakeFiles/install.dir
+C:/Users/MinJae/Documents/GitHub/indentation-check/AStyle_3.1_windows/AStyle/as-mingw-exe/CMakeFiles/edit_cache.dir
+C:/Users/MinJae/Documents/GitHub/indentation-check/AStyle_3.1_windows/AStyle/as-mingw-exe/CMakeFiles/rebuild_cache.dir
+C:/Users/MinJae/Documents/GitHub/indentation-check/AStyle_3.1_windows/AStyle/as-mingw-exe/CMakeFiles/list_install_components.dir
