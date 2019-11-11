@@ -649,8 +649,11 @@ void ASConsole::formatFile(const string& fileName_)
 	{
 		//****
 		// save changes between original file and new file
+		// and line difference information
 		string diffFileName = fileName_ + ".txt";
+		string lineDiffFileName = fileName_ + "_line.txt";
 		ostringstream diffFile;
+		ostringstream lineDiffFile;
 		stringstream origFile;
 		stringstream newFile;
 		string origLine;
@@ -662,8 +665,11 @@ void ASConsole::formatFile(const string& fileName_)
 
 		int origLineNumber = 0;
 		int preOrigLineNumber = 0;
-		bool diff = false;
-		bool preDiff = false;
+		int newLineNumber = 0;
+		int preNewLineNumber = 0;
+		int lineDiff;
+		bool isDiff = false;
+		bool isPreDiff = false;
 		bool isEOLInOrigLine = false;
 
 		origFile >> std::noskipws >> origChar;
@@ -674,9 +680,9 @@ void ASConsole::formatFile(const string& fileName_)
 		// per line in original file
 		while (origFile)
 		{
-			if (preDiff)
+			if (isPreDiff)
 			{
-				diff = true;
+				isDiff = true;
 			}
 			else
 			{
@@ -687,12 +693,12 @@ void ASConsole::formatFile(const string& fileName_)
 			// When the new file is shorter than the original file
 			if (!newFile)
 			{
-				diff = true;
+				isDiff = true;
 				isEOLInOrigLine = true;
 			}
 			// _Char is already set.
 			// All _Char is inserted in _Line.
-			// diff is set :
+			// isDiff is set :
 			//   1. When one character is a whitespace but the other is not.
 			//   2. When one character is a newline but the other is not. 
 			while (!isEOLInOrigLine && origFile && newFile) 
@@ -702,7 +708,7 @@ void ASConsole::formatFile(const string& fileName_)
 				if (origChar != newChar) 
 				{
 					delWhitespace = true;
-					diff = true;
+					isDiff = true;
 					while (origFile && (origChar == ' ' || origChar == '\t')) 
 					{
 						origLine.push_back(origChar);
@@ -732,7 +738,8 @@ void ASConsole::formatFile(const string& fileName_)
 				{
 					// end of line in new file
 					char ch = newChar;
-					diff = true;
+					++newLineNumber;
+					isDiff = true;
 					newLine.push_back(newChar);
 					newFile >> newChar;
 					if (newFile && ch == '\r' && newChar == '\n')
@@ -753,6 +760,7 @@ void ASConsole::formatFile(const string& fileName_)
 			if (newChar == '\n' || newChar == '\r')
 			{
 				char ch = newChar;
+				++newLineNumber;
 				newLine.push_back(newChar);
 				newFile >> newChar;
 				if (newFile && ch == '\r' && newChar == '\n')
@@ -761,17 +769,17 @@ void ASConsole::formatFile(const string& fileName_)
 					newFile >> newChar;
 				}
 			}
-			else if(diff)
+			else if(isDiff)
 			{
-				if (!preDiff)
+				if (!isPreDiff)
 				{
-					preDiff = true;
+					isPreDiff = true;
 					preOrigLineNumber = origLineNumber;
 				}
-				diff = false;
+				isDiff = false;
 			}
-
-			if (diff) 
+			
+			if (isDiff) 
 			{
 				if (preOrigLineNumber == 0)
 					diffFile << " line [" << origLineNumber << "] : " << strEOL;
@@ -781,9 +789,16 @@ void ASConsole::formatFile(const string& fileName_)
 				diffFile << " ---> " << strEOL;
 				diffFile << newLine << strEOL;
 				preOrigLineNumber = 0;
-				diff = false;
-				preDiff = false;
+				isDiff = false;
+				isPreDiff = false;
 			}
+
+			lineDiff = newLineNumber - preNewLineNumber;
+			if (lineDiff > 0)
+				lineDiffFile << origLineNumber << " " << preNewLineNumber + 1 <<  " " << lineDiff << strEOL;
+			else
+				lineDiffFile << origLineNumber << " " << preNewLineNumber <<  " " << 1 << strEOL;
+			preNewLineNumber = newLineNumber;
 			isEOLInOrigLine = false;
 		}
 
@@ -793,7 +808,14 @@ void ASConsole::formatFile(const string& fileName_)
 			error("Cannot open list of changes output file", diffFileName.c_str());
 		fout << diffFile.str();
 		fout.close();
-		//cout << diffFile.str();
+
+		// [original file line number] --mapping-- [new file line number]  [line in new file per line in original file]
+		removeFile(lineDiffFileName.c_str(), "Cannot remove pre-existing line difference file");
+		ofstream f2out(lineDiffFileName.c_str(), ios::binary);
+		if (!f2out)
+			error("Cannot open line difference file", lineDiffFileName.c_str());
+		f2out << lineDiffFile.str();
+		f2out.close();
 		//**end**
 
 		if (!isDryRun)
