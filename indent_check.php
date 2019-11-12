@@ -79,7 +79,7 @@ function readFiles($upfile, &$origFile, &$newFile)
         for ($i = 1; $i < count($origLines); ++$i)
         {
             $index = $i + 1;
-            if (isset($mapping) && isset($mapping[$index]) && $mapping[$index-1] != $mapping[$index])
+            if (isset($mapping[$index]) && $mapping[$index-1] != $mapping[$index])
             {
                 $origFile .= "</tbody><tbody id=\"ol".$mapping[$index]."\"";
                 $origFile .= " class=\"l".$mapping[$index]."\"";
@@ -107,7 +107,7 @@ function readFiles($upfile, &$origFile, &$newFile)
         for ($i = 1; $i < count($newLines); ++$i)
         {
             $index = $i + 1;
-            if (isset($mappingCount) && isset($mappingCount[$index]) && intval($mappingCount[$index]) != 0)
+            if (isset($mappingCount[$index]) && intval($mappingCount[$index]) != 0)
             {
                 $newFile .= "</tbody><tbody id=\"nl".(string)$index."\" class=\"l".(string)$index."\"";
                 $newFile .= " onClick=\"location.href='#ol".(string)$index."'\">";

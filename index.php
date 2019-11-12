@@ -4,7 +4,10 @@ $origFile = "";
 $newFile = "";
 if (isset($_FILES['upfile']) && $_FILES['upfile']['name'] != "")
 {
-    indentCheckAndReadFiles($_FILES['upfile'], $_POST['style'], $origFile, $newFile);
+    if($_FILES['upfile']['size'] >= 5242880)
+        echo "<script>alert('Max size : 5MB');</script>";
+    else
+        indentCheckAndReadFiles($_FILES['upfile'], $_POST['style'], $origFile, $newFile);
 }
 ?>
 <!DOCTYPE html>
@@ -70,7 +73,10 @@ if (isset($_FILES['upfile']) && $_FILES['upfile']['name'] != "")
                     <li>
                     	<div class="text"><?php 
                             if (isset($_POST['style']))
-                                echo 'Style :  <a href="http://astyle.sourceforge.net/astyle.html#_style='.$_POST['style'].'">'.fullStyleName($_POST['style'])."</a>";
+                                if ($_POST['style'] == "default")
+                                    echo 'Style :  <a href="http://astyle.sourceforge.net/astyle.html#_default_brace_style" target="_newtab">'.fullStyleName($_POST['style'])."</a>";
+                                else
+                                    echo 'Style :  <a href="http://astyle.sourceforge.net/astyle.html#_style='.$_POST['style'].'" target="_newtab">'.fullStyleName($_POST['style'])."</a>";
                     	?></div>
                         <div class="output"><?php
                             echo $newFile;
