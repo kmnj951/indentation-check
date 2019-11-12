@@ -538,13 +538,26 @@ void ASConsole::formatCinToCout()
 	initializeOutputEOL(lineEndFormat);
 	formatter.init(&streamIterator);
 
+	// to create diff files in writeDiffFile()
+	string tmpFileName = "_A_formatCinToCout";
+	ofstream fout(tmpFileName.c_str(), ios::binary);
+	if (!fout)
+		error("Cannot open list of changes output file", tmpFileName.c_str());
+	fout << outStream.str();
+	fout.close();
+	ostringstream out;	
+	string outputLine;   //
+
 	while (formatter.hasMoreLines())
 	{
-		cout << formatter.nextLine();
+		outputLine = formatter.nextLine();
+		cout << outputLine;
+		out << outputLine;
 		if (formatter.hasMoreLines())
 		{
 			setOutputEOL(lineEndFormat, streamIterator.getOutputEOL());
 			cout << outputEOL;
+			out << outputEOL;
 		}
 		else
 		{
@@ -553,11 +566,18 @@ void ASConsole::formatCinToCout()
 			{
 				setOutputEOL(lineEndFormat, streamIterator.getOutputEOL());
 				cout << outputEOL;
-				cout << formatter.nextLine();
+				out << outputEOL;
+				outputLine = formatter.nextLine();
+				cout << outputLine;
+				out << outputLine;
 			}
 		}
 	}
 	cout.flush();
+
+	setOutputEOL(lineEndFormat, streamIterator.getOutputEOL());
+	writeDiffFile(tmpFileName, out, outputEOL);
+	removeFile(tmpFileName.c_str(), "Cannot remove pre-existing temporary file");
 }
 
 /**
@@ -647,177 +667,8 @@ void ASConsole::formatFile(const string& fileName_)
 	// if file has changed, write the new file
 	if (!filesAreIdentical || streamIterator.getLineEndChange(lineEndFormat))
 	{
-		//****
-		// save changes between original file and new file
-		// and line difference information
-		string diffFileName = fileName_ + ".txt";
-		string lineDiffFileName = fileName_ + "_line.txt";
-		ostringstream diffFile;
-		ostringstream lineDiffFile;
-		stringstream origFile;
-		stringstream newFile;
-		string origLine;
-		string newLine;
-		char origChar;
-		char newChar;
-		readFile(fileName_, origFile);
-		newFile << out.str();
-
-		int origLineNumber = 0;
-		int preOrigLineNumber = 0;
-		int newLineNumber = 0;
-		int preNewLineNumber = 0;
-		int lineDiff;
-		bool isDiff = false;
-		bool isPreDiff = false;
-		bool isEOLInOrigLine = false;
-
-		origFile >> std::noskipws >> origChar;
-		newFile >> std::noskipws >> newChar;
 		setOutputEOL(lineEndFormat, streamIterator.getOutputEOL());
-		string strEOL = outputEOL;
-
-		// per line in original file
-		while (origFile)
-		{
-			if (isPreDiff)
-			{
-				isDiff = true;
-			}
-			else
-			{
-				origLine.clear();
-				newLine.clear();
-			}
-			
-			// When the new file is shorter than the original file
-			if (!newFile)
-			{
-				isDiff = true;
-				isEOLInOrigLine = true;
-			}
-			// _Char is already set.
-			// All _Char is inserted in _Line.
-			// isDiff is set :
-			//   1. When one character is a whitespace but the other is not.
-			//   2. When one character is a newline but the other is not. 
-			while (!isEOLInOrigLine && origFile && newFile) 
-			{
-				bool delWhitespace = false;
-				// one character is a whitespace.
-				if (origChar != newChar) 
-				{
-					delWhitespace = true;
-					isDiff = true;
-					while (origFile && (origChar == ' ' || origChar == '\t')) 
-					{
-						origLine.push_back(origChar);
-						origFile >> origChar;
-					}
-					while (newFile && (newChar == ' ' || newChar == '\t')) 
-					{
-						newLine.push_back(newChar);
-						newFile >> newChar;
-					}
-				}
-				// end of line in original file
-				if (origChar == '\n' || origChar == '\r')
-				{
-					char ch = origChar;
-					++origLineNumber;
-					isEOLInOrigLine = true;
-					origLine.push_back(origChar);
-					origFile >> origChar;
-					if (origFile && ch == '\r' && origChar == '\n')
-					{
-						origLine.push_back(origChar);
-						origFile >> origChar;
-					}
-				}
-				else if (newChar == '\n' || newChar == '\r')
-				{
-					// end of line in new file
-					char ch = newChar;
-					++newLineNumber;
-					isDiff = true;
-					newLine.push_back(newChar);
-					newFile >> newChar;
-					if (newFile && ch == '\r' && newChar == '\n')
-					{
-						newLine.push_back(newChar);
-						newFile >> newChar;
-					}
-				}
-				else if(!delWhitespace)
-				{
-					origLine.push_back(origChar);
-					origFile >> origChar;
-					newLine.push_back(newChar);
-					newFile >> newChar;
-				}
-			}
-			// Both origLine and newLine are end.
-			if (newChar == '\n' || newChar == '\r')
-			{
-				char ch = newChar;
-				++newLineNumber;
-				newLine.push_back(newChar);
-				newFile >> newChar;
-				if (newFile && ch == '\r' && newChar == '\n')
-				{
-					newLine.push_back(newChar);
-					newFile >> newChar;
-				}
-			}
-			else if(isDiff)
-			{
-				if (!isPreDiff)
-				{
-					isPreDiff = true;
-					preOrigLineNumber = origLineNumber;
-				}
-				isDiff = false;
-			}
-			
-			if (isDiff) 
-			{
-				if (preOrigLineNumber == 0)
-					diffFile << " line [" << origLineNumber << "] : " << strEOL;
-				else
-					diffFile << " line [" << preOrigLineNumber << " ~ " << origLineNumber << "] : " << strEOL;
-				diffFile << origLine;
-				diffFile << " ---> " << strEOL;
-				diffFile << newLine << strEOL;
-				preOrigLineNumber = 0;
-				isDiff = false;
-				isPreDiff = false;
-			}
-
-			lineDiff = newLineNumber - preNewLineNumber;
-			if (lineDiff > 0)
-				lineDiffFile << origLineNumber << " " << preNewLineNumber + 1 <<  " " << lineDiff << strEOL;
-			else
-				lineDiffFile << origLineNumber << " " << preNewLineNumber <<  " " << 1 << strEOL;
-			preNewLineNumber = newLineNumber;
-			isEOLInOrigLine = false;
-		}
-
-		removeFile(diffFileName.c_str(), "Cannot remove pre-existing list of changes file");
-		ofstream fout(diffFileName.c_str(), ios::binary);
-		if (!fout)
-			error("Cannot open list of changes output file", diffFileName.c_str());
-		fout << diffFile.str();
-		fout.close();
-
-		// [original file line number] --mapping-- [new file line number]  [line in new file per line in original file]
-		removeFile(lineDiffFileName.c_str(), "Cannot remove pre-existing line difference file");
-		ofstream f2out(lineDiffFileName.c_str(), ios::binary);
-		if (!f2out)
-			error("Cannot open line difference file", lineDiffFileName.c_str());
-		f2out << lineDiffFile.str();
-		f2out.close();
-		//**end**
-
+		writeDiffFile(fileName_, out, outputEOL);
 		if (!isDryRun)
 			writeFile(fileName_, encoding, out);
 		printMsg(_("Formatted  %s\n"), displayName);
@@ -831,6 +682,176 @@ void ASConsole::formatFile(const string& fileName_)
 	}
 
 	assert(formatter.getChecksumDiff() == 0);
+}
+
+void ASConsole::writeDiffFile(const string& fileName_, const ostringstream& out, const string& strEOL) const
+{
+	// save changes between original file and new file
+	// and line difference information
+	string diffFileName = fileName_ + ".txt";
+	string lineDiffFileName = fileName_ + "_line.txt";
+	ostringstream diffFile;
+	ostringstream lineDiffFile;
+	stringstream origFile;
+	stringstream newFile;
+	string origLine;
+	string newLine;
+	char origChar;
+	char newChar;
+	readFile(fileName_, origFile);
+	newFile << out.str();
+
+	int origLineNumber = 0;
+	int preOrigLineNumber = 0;
+	int newLineNumber = 0;
+	int preNewLineNumber = 0;
+	int lineDiff;
+	bool isDiff = false;
+	bool isPreDiff = false;
+	bool isEOLInOrigLine = false;
+
+	origFile >> std::noskipws >> origChar;
+	newFile >> std::noskipws >> newChar;
+
+	// per line in original file
+	while (origFile)
+	{
+		if (isPreDiff)
+		{
+			isDiff = true;
+		}
+		else
+		{
+			origLine.clear();
+			newLine.clear();
+		}
+		
+		// When the new file is shorter than the original file
+		if (!newFile)
+		{
+			isDiff = true;
+			isEOLInOrigLine = true;
+		}
+		// _Char is already set.
+		// All _Char is inserted in _Line.
+		// isDiff is set :
+		//   1. When one character is a whitespace but the other is not.
+		//   2. When one character is a newline but the other is not. 
+		while (!isEOLInOrigLine && origFile && newFile) 
+		{
+			bool delWhitespace = false;
+			// one character is a whitespace.
+			if (origChar != newChar) 
+			{
+				delWhitespace = true;
+				isDiff = true;
+				while (origFile && (origChar == ' ' || origChar == '\t')) 
+				{
+					origLine.push_back(origChar);
+					origFile >> origChar;
+				}
+				while (newFile && (newChar == ' ' || newChar == '\t')) 
+				{
+					newLine.push_back(newChar);
+					newFile >> newChar;
+				}
+			}
+			// end of line in original file
+			if (origChar == '\n' || origChar == '\r')
+			{
+				char ch = origChar;
+				++origLineNumber;
+				isEOLInOrigLine = true;
+				origLine.push_back(origChar);
+				origFile >> origChar;
+				if (origFile && ch == '\r' && origChar == '\n')
+				{
+					origLine.push_back(origChar);
+					origFile >> origChar;
+				}
+			}
+			else if (newChar == '\n' || newChar == '\r')
+			{
+				// end of line in new file
+				char ch = newChar;
+				++newLineNumber;
+				isDiff = true;
+				newLine.push_back(newChar);
+				newFile >> newChar;
+				if (newFile && ch == '\r' && newChar == '\n')
+				{
+					newLine.push_back(newChar);
+					newFile >> newChar;
+				}
+			}
+			else if(!delWhitespace)
+			{
+				origLine.push_back(origChar);
+				origFile >> origChar;
+				newLine.push_back(newChar);
+				newFile >> newChar;
+			}
+		}
+		// Both origLine and newLine are end.
+		if (newChar == '\n' || newChar == '\r')
+		{
+			char ch = newChar;
+			++newLineNumber;
+			newLine.push_back(newChar);
+			newFile >> newChar;
+			if (newFile && ch == '\r' && newChar == '\n')
+			{
+				newLine.push_back(newChar);
+				newFile >> newChar;
+			}
+		}
+		else if(isDiff)
+		{
+			if (!isPreDiff)
+			{
+				isPreDiff = true;
+				preOrigLineNumber = origLineNumber;
+			}
+			isDiff = false;
+		}
+		
+		if (isDiff) 
+		{
+			if (preOrigLineNumber == 0)
+				diffFile << " line [" << origLineNumber << "] : " << strEOL;
+			else
+				diffFile << " line [" << preOrigLineNumber << " ~ " << origLineNumber << "] : " << strEOL;
+			diffFile << origLine;
+			diffFile << " ---> " << strEOL;
+			diffFile << newLine << strEOL;
+			preOrigLineNumber = 0;
+			isDiff = false;
+			isPreDiff = false;
+		}
+
+		lineDiff = newLineNumber - preNewLineNumber;
+		if (lineDiff > 0)
+			lineDiffFile << origLineNumber << " " << preNewLineNumber + 1 <<  " " << lineDiff << strEOL;
+		else
+			lineDiffFile << origLineNumber << " " << preNewLineNumber <<  " " << 1 << strEOL;
+		preNewLineNumber = newLineNumber;
+		isEOLInOrigLine = false;
+	}
+
+	removeFile(diffFileName.c_str(), "Cannot remove pre-existing list of changes file");
+	ofstream fout(diffFileName.c_str(), ios::binary);
+	if (!fout)
+		error("Cannot open list of changes output file", diffFileName.c_str());
+	fout << diffFile.str();
+	fout.close();
+
+	// [original file line number] --mapping-- [new file line number]  [line in new file per line in original file]
+	removeFile(lineDiffFileName.c_str(), "Cannot remove pre-existing line difference file");
+	ofstream f2out(lineDiffFileName.c_str(), ios::binary);
+	if (!f2out)
+		error("Cannot open line difference file", lineDiffFileName.c_str());
+	f2out << lineDiffFile.str();
+	f2out.close();
 }
 
 /**

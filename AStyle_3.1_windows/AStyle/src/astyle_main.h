@@ -373,6 +373,7 @@ private:	// functions
 	int  waitForRemove(const char* newFileName) const;
 	int  wildcmp(const char* wild, const char* data) const;
 	void writeFile(const string& fileName_, FileEncoding encoding, ostringstream& out) const;
+	void writeDiffFile(const string& fileName_, const ostringstream& out, const string& strEOL) const;
 #ifdef _WIN32
 	void displayLastError();
 #endif
