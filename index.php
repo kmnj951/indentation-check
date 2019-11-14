@@ -63,7 +63,7 @@ if (isset($_FILES['upfile']) && $_FILES['upfile']['name'] != "")
 				<ul class="grid">
                     <li>
                     	<div class="text"><?php 
-                        	if (isset($_FILES['upfile']))
+                            if (isset($_FILES['upfile']))
                         	    echo $_FILES['upfile']['name'];
                     	?></div>
                         <div class="output"><?php
