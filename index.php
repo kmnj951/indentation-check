@@ -4,30 +4,30 @@ $origFile = "";
 $newFile = "";
 if (isset($_FILES['upfile']) && $_FILES['upfile']['name'] != "")
 {
-    if($_FILES['upfile']['size'] >= 5242880)
-        echo "<script>alert('Max size : 5MB');</script>";
-    else
-        indentCheckAndReadFiles($_FILES['upfile'], $_POST['style'], $origFile, $newFile);
+	if($_FILES['upfile']['size'] >= 5242880)
+		echo "<script>alert('Max size : 5MB');</script>";
+	else
+		indentCheckAndReadFiles($_FILES['upfile'], $_POST['style'], $origFile, $newFile);
 }
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="utf-8">
+<meta charset="utf-8">
 	<title>indent check</title>
 	<link rel="stylesheet" href="style.css">
 	<script src="//code.jquery.com/jquery-3.3.1.min.js"></script>
 	<script>
 	$(document).ready(function(){
-    	$(".grid tbody").hover(
-    	function () {
-    	    var tbodyClass = $(this).attr("class");
-    		$("." + tbodyClass).css("background-color", "gainsboro");   		
-    	},  
-    	function () {
-    		var tbodyClass = $(this).attr("class");
-    		$("." + tbodyClass).css("background-color", "white");
-    	});
+		$(".grid tbody").hover(
+			function () {
+				var tbodyClass = $(this).attr("class");
+				$("." + tbodyClass).css("background-color", "gainsboro");   		
+			},  
+			function () {
+				var tbodyClass = $(this).attr("class");
+				$("." + tbodyClass).css("background-color", "white");
+			});
 	});
 	</script>
 </head>
@@ -61,28 +61,28 @@ if (isset($_FILES['upfile']) && $_FILES['upfile']['name'] != "")
 					</select>
 				</div>
 				<ul class="grid">
-                    <li>
-                    	<div class="text"><?php 
-                            if (isset($_FILES['upfile']))
-                        	    echo $_FILES['upfile']['name'];
-                    	?></div>
-                        <div class="output"><?php
-                            echo $origFile; 
-                        ?></div>
-                    </li>
-                    <li>
-                    	<div class="text"><?php 
-                            if (isset($_POST['style']))
-                                if ($_POST['style'] == "default")
-                                    echo 'Style :  <a href="http://astyle.sourceforge.net/astyle.html#_default_brace_style" target="_newtab">'.fullStyleName($_POST['style'])."</a>";
-                                else
-                                    echo 'Style :  <a href="http://astyle.sourceforge.net/astyle.html#_style='.$_POST['style'].'" target="_newtab">'.fullStyleName($_POST['style'])."</a>";
-                    	?></div>
-                        <div class="output"><?php
-                            echo $newFile;
-                        ?></div>
-                    </li>
-                </ul>
+				    <li>
+					<div class="text"><?php 
+					    if (isset($_FILES['upfile']))
+							echo $_FILES['upfile']['name'];
+					?></div>
+					<div class="output"><?php
+					    echo $origFile; 
+					?></div>
+				    </li>
+				    <li>
+					<div class="text"><?php 
+					    if (isset($_POST['style']))
+							if ($_POST['style'] == "default")
+						    	echo 'Style :  <a href="http://astyle.sourceforge.net/astyle.html#_default_brace_style" target="_newtab">'.fullStyleName($_POST['style'])."</a>";
+							else
+						    	echo 'Style :  <a href="http://astyle.sourceforge.net/astyle.html#_style='.$_POST['style'].'" target="_newtab">'.fullStyleName($_POST['style'])."</a>";
+					?></div>
+					<div class="output"><?php
+					    echo $newFile;
+					?></div>
+				    </li>
+				</ul>
 			</form>
 		</div>
 	</div>
