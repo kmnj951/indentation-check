@@ -61,28 +61,28 @@ if (isset($_FILES['upfile']) && $_FILES['upfile']['name'] != "")
 					</select>
 				</div>
 				<ul class="grid">
-                    <li>
-                    	<div class="text"><?php 
-                            if (isset($_FILES['upfile']))
-                        	    echo $_FILES['upfile']['name'];
-                    	?></div>
-                        <div class="output"><?php
-                            echo $origFile; 
-                        ?></div>
-                    </li>
-                    <li>
-                    	<div class="text"><?php 
-                            if (isset($_POST['style']))
-                                if ($_POST['style'] == "default")
-                                    echo 'Style :  <a href="http://astyle.sourceforge.net/astyle.html#_default_brace_style" target="_newtab">'.fullStyleName($_POST['style'])."</a>";
-                                else
-                                    echo 'Style :  <a href="http://astyle.sourceforge.net/astyle.html#_style='.$_POST['style'].'" target="_newtab">'.fullStyleName($_POST['style'])."</a>";
-                    	?></div>
-                        <div class="output"><?php
-                            echo $newFile;
-                        ?></div>
-                    </li>
-                </ul>
+				    <li>
+					<div class="text"><?php 
+					    if (isset($_FILES['upfile']))
+						    echo $_FILES['upfile']['name'];
+					?></div>
+					<div class="output"><?php
+					    echo $origFile; 
+					?></div>
+				    </li>
+				    <li>
+					<div class="text"><?php 
+					    if (isset($_POST['style']))
+						if ($_POST['style'] == "default")
+						    echo 'Style :  <a href="http://astyle.sourceforge.net/astyle.html#_default_brace_style" target="_newtab">'.fullStyleName($_POST['style'])."</a>";
+						else
+						    echo 'Style :  <a href="http://astyle.sourceforge.net/astyle.html#_style='.$_POST['style'].'" target="_newtab">'.fullStyleName($_POST['style'])."</a>";
+					?></div>
+					<div class="output"><?php
+					    echo $newFile;
+					?></div>
+				    </li>
+				</ul>
 			</form>
 		</div>
 	</div>
