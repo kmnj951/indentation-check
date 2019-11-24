@@ -1,5 +1,5 @@
 <?php
-function indentCheck($upfile, $style)
+function indentCheck($upfile, $style, $space, $padOp, $padParen, $padHeader)
 {
     // save file
     // $upfile = $_FILES['upfile'];
@@ -11,7 +11,9 @@ function indentCheck($upfile, $style)
     // $style = $_POST['style'];
     $instr = "AStyle ";
     if ($style != "default")
-        $instr .= "--style=" . $style . " ";
+        $instr .= "--style=" . $style;
+    $instr .= " -" . $space . " ";
+    $instr .= $padOp . $padParen . $padHeader;
     $instr .= $upfile['name'];
     exec($instr);
 }
@@ -20,16 +22,24 @@ function readDiffFile($upfile, &$lineNums)
 {
     $index = 0;
     $fileName = $upfile['name'] . ".txt";
-    $fr = file_get_contents($fileName);
-    if ($fr != FALSE)
+    if (file_exists($fileName))
     {
+        $fr = file_get_contents($fileName);
         preg_match_all("/^\sline\s\[(.*)\]\s:\s*$/m", $fr, $lineStr, PREG_PATTERN_ORDER);
         for ($i = 0; $i < count($lineStr[1]); ++$i)
         {
             preg_match_all("/\d+/", $lineStr[1][$i], $Nums);
-            for ($j = 0; $j < count($Nums[0]); ++$j)
+            if (count($Nums[0]) > 1)
             {
-                $lineNums[$index++] = (int)$Nums[0][$j];
+                for ($j = (int)$Nums[0][0]; $j <= (int)$Nums[0][1]; ++$j)
+                {
+                    if ($index == 0 || $lineNums[$index-1] != $j)
+                        $lineNums[$index++] = $j;
+                }
+            }
+            else if ($index == 0 || $lineNums[$index-1] != (int)$Nums[0][0])
+            {
+                $lineNums[$index++] = (int)$Nums[0][0];
             }
         }
         unlink($fileName);
@@ -43,9 +53,8 @@ function readLineDiffFile($upfile, &$mapping, &$mappingCount)
     if ($lines != FALSE) {
         for ($i = 0; $i < count($lines); ++$i)
         {
-            $index = $i + 1;
             $arr = explode(" ", $lines[$i]);
-            $mapping[$index] = $arr[1];
+            $mapping[$arr[0]] = $arr[1];
             $mappingCount[(int)$arr[1]] = $arr[2];
         }
         unlink($fileName);
@@ -97,31 +106,52 @@ function readFiles($upfile, &$origFile, &$newFile)
         }
         $origFile .= "</table>";
         unlink($fileName.".orig");
+        
+        // changes
+        $newFile = "";
+        $newLines = @file($fileName);
+        if ($newLines != FALSE) {
+            $newFile = '<table><tbody id="nl1" class="l1" onClick="location.href=\'#ol1\'">';
+            $newFile .= "<tr><td>1</td><td><pre>".htmlspecialchars($newLines[0])."</pre></td></tr>";
+            for ($i = 1; $i < count($newLines); ++$i)
+            {
+                $index = $i + 1;
+                if (isset($mappingCount[$index]) && intval($mappingCount[$index]) != 0)
+                {
+                    $newFile .= "</tbody><tbody id=\"nl".(string)$index."\" class=\"l".(string)$index."\"";
+                    $newFile .= " onClick=\"location.href='#ol".(string)$index."'\">";
+                }
+                $newLines[$i] = htmlspecialchars($newLines[$i]);
+                $newFile .= "<tr><td>".(string)$index."</td><td><pre>".$newLines[$i]."</pre></td></tr>";
+            }
+            $newFile .= "</tbody></table>";
+        }
+    }
+    else
+    {
+        $origLines = @file($fileName);
+        if ($origLines != FALSE) {
+            $origFile = '<table><tbody id="nl1" class="l1" onClick="location.href=\'#ol1\'">';
+            $origFile .= "<tr><td>1</td><td><pre>".htmlspecialchars($origLines[0])."</pre></td></tr>";
+            for ($i = 1; $i < count($origLines); ++$i)
+            {
+                $index = $i + 1;
+
+                $origFile .= "</tbody><tbody id=\"nl".(string)$index."\" class=\"l".(string)$index."\"";
+                $origFile .= " onClick=\"location.href='#ol".(string)$index."'\">";
+                $origLines[$i] = htmlspecialchars($origLines[$i]);
+                $origFile .= "<tr><td>".(string)$index."</td><td><pre>".$origLines[$i]."</pre></td></tr>";
+            }
+            $origFile .= "</tbody></table>";
+        }
+        $newFile = "<table><tr><td></td><td>no changes</td></tr></table>";
     }
     
-    $newFile = "";
-    $newLines = @file($fileName);
-    if ($newLines != FALSE) {
-        $newFile = '<table><tbody id="nl1" class="l1" onClick="location.href=\'#ol1\'">';
-        $newFile .= "<tr><td>1</td><td><pre>".htmlspecialchars($newLines[0])."</pre></td></tr>";
-        for ($i = 1; $i < count($newLines); ++$i)
-        {
-            $index = $i + 1;
-            if (isset($mappingCount[$index]) && intval($mappingCount[$index]) != 0)
-            {
-                $newFile .= "</tbody><tbody id=\"nl".(string)$index."\" class=\"l".(string)$index."\"";
-                $newFile .= " onClick=\"location.href='#ol".(string)$index."'\">";
-            }
-            $newLines[$i] = htmlspecialchars($newLines[$i]);
-            $newFile .= "<tr><td>".(string)$index."</td><td><pre>".$newLines[$i]."</pre></td></tr>";
-        }
-        $newFile .= "</tbody></table>";
-    }
 }
 
-function indentCheckAndReadFiles($upfile, $style, &$origFile, &$newFile)
+function indentCheckAndReadFiles($upfile, $options, &$origFile, &$newFile)
 {
-    indentCheck($upfile, $style);
+    indentCheck($upfile, $options[0], $options[1], $options[2], $options[3], $options[4]);
     readFiles($upfile, $origFile, $newFile);
 }
 

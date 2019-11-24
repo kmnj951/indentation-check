@@ -3,6 +3,10 @@ body, h1, h2, p, ul, pre {
     padding: 0;
 }
 
+pre {
+    display:inline;
+}
+
 li {
     list-style-type: none;
 }

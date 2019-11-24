@@ -4,10 +4,11 @@ $origFile = "";
 $newFile = "";
 if (isset($_FILES['upfile']) && $_FILES['upfile']['name'] != "")
 {
+    $options = [$_POST['style'], $_POST['space'], $_POST['padOp'], $_POST['padParen'], $_POST['padHeader']];
     if($_FILES['upfile']['size'] >= 5242880)
         echo "<script>alert('Max size : 5MB');</script>";
     else
-        indentCheckAndReadFiles($_FILES['upfile'], $_POST['style'], $origFile, $newFile);
+        indentCheckAndReadFiles($_FILES['upfile'], $options, $origFile, $newFile);
 }
 ?>
 <!DOCTYPE html>
@@ -22,11 +23,20 @@ if (isset($_FILES['upfile']) && $_FILES['upfile']['name'] != "")
                 $(".grid tbody").hover(
                     function () {
                         var tbodyClass = $(this).attr("class");
-               	        $("." + tbodyClass).css("background-color", "gainsboro");   		
+               	        $("." + tbodyClass).css("background-color", "whitesmoke");   		
                     },  
                     function () {
                         var tbodyClass = $(this).attr("class");
                         $("." + tbodyClass).css("background-color", "white");
+               	    });
+                $(".grid tbody").hover(
+                    function () {
+                        var tbodyClass = $(this).attr("class");
+               	        $("." + tbodyClass + " pre").css("background-color", "gainsboro");   		
+                    },  
+                    function () {
+                        var tbodyClass = $(this).attr("class");
+                        $("." + tbodyClass + " pre").css("background-color", "white");
                	    });
             });
         </script>
@@ -48,7 +58,7 @@ if (isset($_FILES['upfile']) && $_FILES['upfile']['name'] != "")
                             <option value="java">Java</option>
                             <option value="kr">Kernighan &amp; Ritchie</option>
                             <option value="stroustrup">Stroustrup</option>
-                            <option value="Whitesmith">whitesmith</option>
+                            <option value="Whitesmith">Whitesmith</option>
                             <option value="vtk">Visualization Toolkit</option>
                             <option value="ratliff">Ratliff</option>
                             <option value="gnu">GNU</option>
@@ -59,6 +69,33 @@ if (isset($_FILES['upfile']) && $_FILES['upfile']['name'] != "")
                             <option value="mozilla">Mozilla</option>
                             <option value="pico">Pico</option>
                             <option value="lisp">Lisp</option>
+                        </select>
+                        <span class="spaceLabel">Spaces:</span> 
+                        <select name="space">
+                            <option value="s2">2</option>
+                            <option value="s4" selected>4</option>
+                            <option value="s8">8</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="padOpLabel">Padding around operators:</span> 
+                        <select name="padOp">
+                            <option value="" selected>none</option>
+                            <option value="-p ">operators</option>
+                            <option value="-xg ">just comma</option>
+                        </select>
+                        <span class="padParenLabel">Padding around parentheses:</span> 
+                        <select name="padParen">
+                            <option value="" selected>none</option>
+                            <option value="-P ">all paren</option>
+                            <option value="-d ">just outside</option>
+                            <option value="-xd ">just left outside</option>
+                            <option value="-D ">just inside</option>
+                        </select>
+                        <span class="padHeaderLabel">Padding between header(if, while..) and paren:</span> 
+                        <select name="padHeader">
+                            <option value=""selected>none</option>
+                            <option value="--pad-header ">True</option>
                         </select>
                     </div>
                     <ul class="grid">
