@@ -684,10 +684,12 @@ void ASConsole::formatFile(const string& fileName_)
 	assert(formatter.getChecksumDiff() == 0);
 }
 
+/**
+ * save changes between original file and new file
+ * and line difference information
+ */
 void ASConsole::writeDiffFile(const string& fileName_, const ostringstream& out, const string& strEOL) const
 {
-	// save changes between original file and new file
-	// and line difference information
 	string diffFileName = fileName_ + ".txt";
 	string lineDiffFileName = fileName_ + "_line.txt";
 	ostringstream diffFile;
@@ -703,12 +705,20 @@ void ASConsole::writeDiffFile(const string& fileName_, const ostringstream& out,
 
 	int origLineNumber = 0;
 	int preOrigLineNumber = 0;
+	int oldOrigLineNumber = 0;
 	int newLineNumber = 0;
 	int preNewLineNumber = 0;
+	int oldNewLineNumber = 0;
 	int lineDiff;
 	bool isDiff = false;
 	bool isPreDiff = false;
 	bool isEOLInOrigLine = false;
+	bool isNextOrigLine = true;
+	bool isNextNewLine = true;
+	bool isAddBrace = false;
+	bool isInOneBrace = false;
+	int spaceCountFront = 0;
+	int spaceCountAccum = 0;
 
 	origFile >> std::noskipws >> origChar;
 	newFile >> std::noskipws >> newChar;
@@ -716,6 +726,17 @@ void ASConsole::writeDiffFile(const string& fileName_, const ostringstream& out,
 	// per line in original file
 	while (origFile)
 	{
+		if (spaceCountAccum != 0 && !isInOneBrace)
+		{
+			isDiff = true;
+			spaceCountAccum = 0;
+		}
+		if (spaceCountFront != 0)
+		{
+			isDiff = true;
+			spaceCountFront = 0;
+		}
+			
 		if (isPreDiff)
 		{
 			isDiff = true;
@@ -740,28 +761,114 @@ void ASConsole::writeDiffFile(const string& fileName_, const ostringstream& out,
 		while (!isEOLInOrigLine && origFile && newFile) 
 		{
 			bool delWhitespace = false;
-			// one character is a whitespace.
+
+			if (isNextOrigLine)
+			{
+				++origLineNumber;
+				isNextOrigLine = false;
+			}
+			if (isNextNewLine)
+			{
+				++newLineNumber;
+				isNextNewLine = false;
+			}
+
 			if (origChar != newChar) 
 			{
+				// one character is a whitespace.
 				delWhitespace = true;
 				isDiff = true;
-				while (origFile && (origChar == ' ' || origChar == '\t')) 
+				while (origFile && (origChar == ' ' || origChar == '\t'))
 				{
+					++spaceCountFront;
 					origLine.push_back(origChar);
 					origFile >> origChar;
 				}
-				while (newFile && (newChar == ' ' || newChar == '\t')) 
+				while (newFile && (newChar == ' ' || newChar == '\t'))
 				{
 					newLine.push_back(newChar);
 					newFile >> newChar;
 				}
+
+				// Something has been inserted or deleted. 
+				if (origChar != newChar && !(origChar == '\n' || origChar == '\r') && !(newChar == '\n' || newChar == '\r'))
+				{				
+					// for attaching brace in 1tbs
+					if (newChar == '{')
+					{
+						isAddBrace = true;
+						isInOneBrace = true;
+						--origLineNumber;
+						isNextOrigLine = true;
+						isEOLInOrigLine = true;
+						do
+						{
+							newLine.push_back(newChar);
+							newFile >> newChar;
+						}
+						while (newFile && (newChar == ' ' || newChar == '\t'));
+						if (newFile && (newChar == '\n' || newChar == '\r'))
+						{
+							char ch = newChar;
+							isNextNewLine = true;
+							newLine.push_back(newChar);
+							newFile >> newChar;
+							if (newFile && ch == '\r' && newChar == '\n')
+							{
+								newLine.push_back(newChar);
+								newFile >> newChar;
+							}
+							while (newFile && (newChar == ' ' || newChar == '\t'))
+							{
+								--spaceCountFront;\
+								newLine.push_back(newChar);
+								newFile >> newChar;
+							}
+						}
+					}
+					else if (newChar == '}')
+					{
+						isAddBrace = true;
+						isInOneBrace = false;
+						do
+						{
+							newLine.push_back(newChar);
+							newFile >> newChar;
+						}
+						while (newFile && (newChar == ' ' || newChar == '\t'));
+						if (newChar == '\n' || newChar == '\r')
+						{
+							char ch = newChar;
+							--origLineNumber;
+							isNextOrigLine = true;
+							isEOLInOrigLine = true;
+							isNextNewLine = true;
+							newLine.push_back(newChar);
+							newFile >> newChar;
+							if (newFile && ch == '\r' && newChar == '\n')
+							{
+								newLine.push_back(newChar);
+								newFile >> newChar;
+							}
+							while (newFile && (newChar == ' ' || newChar == '\t'))
+							{
+								--spaceCountAccum;
+								newLine.push_back(newChar);
+								newFile >> newChar;
+							}
+						}
+					}
+				}
+				else
+					spaceCountFront = 0;
 			}
 			// end of line in original file
 			if (origChar == '\n' || origChar == '\r')
 			{
 				char ch = origChar;
-				++origLineNumber;
+				spaceCountAccum = 0;
 				isEOLInOrigLine = true;
+				isNextOrigLine = true;
 				origLine.push_back(origChar);
 				origFile >> origChar;
 				if (origFile && ch == '\r' && origChar == '\n')
@@ -774,7 +881,7 @@ void ASConsole::writeDiffFile(const string& fileName_, const ostringstream& out,
 			{
 				// end of line in new file
 				char ch = newChar;
-				++newLineNumber;
+				isNextNewLine = true;
 				isDiff = true;
 				newLine.push_back(newChar);
 				newFile >> newChar;
@@ -786,17 +893,19 @@ void ASConsole::writeDiffFile(const string& fileName_, const ostringstream& out,
 			}
 			else if(!delWhitespace)
 			{
+				if (isInOneBrace && (origChar == ' ' || origChar == '\t'))
+					++spaceCountAccum;
 				origLine.push_back(origChar);
 				origFile >> origChar;
 				newLine.push_back(newChar);
 				newFile >> newChar;
 			}
 		}
-		// Both origLine and newLine are end.
+		// Both origLine and newLine are end. (origLine is already processed.)
 		if (newChar == '\n' || newChar == '\r')
 		{
 			char ch = newChar;
-			++newLineNumber;
+			isNextNewLine = true;
 			newLine.push_back(newChar);
 			newFile >> newChar;
 			if (newFile && ch == '\r' && newChar == '\n')
@@ -805,37 +914,42 @@ void ASConsole::writeDiffFile(const string& fileName_, const ostringstream& out,
 				newFile >> newChar;
 			}
 		}
-		else if(isDiff)
+		else if(isDiff && !isAddBrace)
 		{
 			if (!isPreDiff)
 			{
 				isPreDiff = true;
-				preOrigLineNumber = origLineNumber;
+				oldOrigLineNumber = origLineNumber;
 			}
 			isDiff = false;
 		}
 		
 		if (isDiff) 
 		{
-			if (preOrigLineNumber == 0)
+			if (oldOrigLineNumber == 0 || oldOrigLineNumber == origLineNumber)
 				diffFile << " line [" << origLineNumber << "] : " << strEOL;
 			else
-				diffFile << " line [" << preOrigLineNumber << " ~ " << origLineNumber << "] : " << strEOL;
+				diffFile << " line [" << oldOrigLineNumber<< " ~ " << origLineNumber << "] : " << strEOL;
 			diffFile << origLine;
 			diffFile << " ---> " << strEOL;
 			diffFile << newLine << strEOL;
-			preOrigLineNumber = 0;
+			oldOrigLineNumber = 0;
 			isDiff = false;
 			isPreDiff = false;
 		}
 
-		lineDiff = newLineNumber - preNewLineNumber;
+		if (preOrigLineNumber == origLineNumber)
+			preNewLineNumber = oldNewLineNumber;
+		lineDiff = newLineNumber - preNewLineNumber;		
 		if (lineDiff > 0)
 			lineDiffFile << origLineNumber << " " << preNewLineNumber + 1 <<  " " << lineDiff << strEOL;
 		else
 			lineDiffFile << origLineNumber << " " << preNewLineNumber <<  " " << 1 << strEOL;
+		oldNewLineNumber = preNewLineNumber;
 		preNewLineNumber = newLineNumber;
+		preOrigLineNumber = origLineNumber;
 		isEOLInOrigLine = false;
+		isAddBrace = false;
 	}
 
 	removeFile(diffFileName.c_str(), "Cannot remove pre-existing list of changes file");
